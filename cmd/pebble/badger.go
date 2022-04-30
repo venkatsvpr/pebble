@@ -2,6 +2,7 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
+//go:build badger
 // +build badger
 
 package main
@@ -144,3 +145,4 @@ func (b badgerBatch) Delete(key []byte, _ *pebble.WriteOptions) error {
 
 func (b badgerBatch) LogData(data []byte, _ *pebble.WriteOptions) error {
 	panic("badgerBatch.logData: unimplemented")
+}
