@@ -2,7 +2,6 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
-//go:build badger
 // +build badger
 
 package main
@@ -12,7 +11,7 @@ import (
 	"log"
 
 	"github.com/cockroachdb/pebble"
-	badger "github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v2"
 )
 
 // Adapters for Badger.
@@ -145,4 +144,3 @@ func (b badgerBatch) Delete(key []byte, _ *pebble.WriteOptions) error {
 
 func (b badgerBatch) LogData(data []byte, _ *pebble.WriteOptions) error {
 	panic("badgerBatch.logData: unimplemented")
-}
