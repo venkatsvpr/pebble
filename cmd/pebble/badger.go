@@ -21,7 +21,7 @@ type badgerDB struct {
 }
 
 func newBadgerDB(dir string) DB {
-	db, err := badger.Open(badger.DefaultOptions(dir).WithMaxCacheSize(cacheSize))
+	db, err := badger.Open(badger.DefaultOptions(dir))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,12 +32,16 @@ func (b badgerDB) NewIter(opts *pebble.IterOptions) iterator {
 	txn := b.db.NewTransaction(false)
 	iopts := badger.DefaultIteratorOptions
 	iopts.PrefetchValues = false
-	iter := txn.NewIterator(iopts)
+
+	revOpts := badger.DefaultIteratorOptions
+	revOpts.PrefetchValues = false
+	revOpts.Reverse = true
 	return &badgerIterator{
-		txn:   txn,
-		iter:  iter,
-		lower: opts.GetLowerBound(),
-		upper: opts.GetUpperBound(),
+		txn:     txn,
+		iter:    txn.NewIterator(iopts),
+		revIter: txn.NewIterator(revOpts),
+		lower:   opts.GetLowerBound(),
+		upper:   opts.GetUpperBound(),
 	}
 }
 
@@ -59,11 +63,12 @@ func (b badgerDB) Flush() error {
 }
 
 type badgerIterator struct {
-	txn   *badger.Txn
-	iter  *badger.Iterator
-	buf   []byte
-	lower []byte
-	upper []byte
+	txn     *badger.Txn
+	iter    *badger.Iterator
+	revIter *badger.Iterator
+	buf     []byte
+	lower   []byte
+	upper   []byte
 }
 
 func (i *badgerIterator) SeekGE(key []byte) bool {
@@ -77,16 +82,45 @@ func (i *badgerIterator) SeekGE(key []byte) bool {
 	return true
 }
 
+func (i *badgerIterator) SeekLT(key []byte) bool {
+	return true
+	/*
+		# venkat TODO: check if this is the right way to do
+		i.revIter.Seek(key)
+		if !i.revIter.Valid() {
+			return false
+		}
+
+		if i.lower != nil && bytes.Compare(i.Key(), i.lower) <= 0 {
+			return false
+		}
+		return true
+	*/
+}
+
 func (i *badgerIterator) Valid() bool {
-	return i.iter.Valid()
+	return i.iter.Valid() || i.revIter.Valid()
 }
 
 func (i *badgerIterator) Key() []byte {
+	if i.revIter.Valid() {
+		return i.revIter.Item().Key()
+	}
+
 	return i.iter.Item().Key()
+
 }
 
 func (i *badgerIterator) Value() []byte {
 	var err error
+	if i.revIter.Valid() {
+		i.buf, err = i.revIter.Item().ValueCopy(i.buf[:0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		return i.buf
+	}
+
 	i.buf, err = i.iter.Item().ValueCopy(i.buf[:0])
 	if err != nil {
 		log.Fatal(err)
@@ -119,6 +153,7 @@ func (i *badgerIterator) Prev() bool {
 
 func (i *badgerIterator) Close() error {
 	i.iter.Close()
+	i.revIter.Close()
 	i.txn.Discard()
 	return nil
 }
