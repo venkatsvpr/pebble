@@ -2,17 +2,20 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
+//go:build badger
+// +build badger
+
 package main
 
 import (
 	"bytes"
+	"expvar"
 	"log"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/internal/cache"
 	"github.com/cockroachdb/pebble/sstable"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/dgraph-io/badger/v2/y"
+	"github.com/outcaste-io/badger/v3"
 )
 
 // Adapters for Badger.
@@ -33,15 +36,11 @@ func (b badgerDB) NewIter(opts *pebble.IterOptions) iterator {
 	iopts := badger.DefaultIteratorOptions
 	iopts.PrefetchValues = false
 
-	revOpts := badger.DefaultIteratorOptions
-	revOpts.PrefetchValues = false
-	revOpts.Reverse = true
 	return &badgerIterator{
-		txn:     txn,
-		iter:    txn.NewIterator(iopts),
-		revIter: txn.NewIterator(revOpts),
-		lower:   opts.GetLowerBound(),
-		upper:   opts.GetUpperBound(),
+		txn:   txn,
+		iter:  txn.NewIterator(iopts),
+		lower: opts.GetLowerBound(),
+		upper: opts.GetUpperBound(),
 	}
 }
 
@@ -69,13 +68,13 @@ func (b badgerDB) Metrics() *pebble.Metrics {
 			InProgressBytes  int64
 			NumInProgress    int64
 			MarkedFiles      int
-		},
+		}{},
 		Flush:  struct{ Count int64 }{},
 		Filter: sstable.FilterMetrics{},
 		Levels: [7]pebble.LevelMetrics{
 			pebble.LevelMetrics{
-				BytesRead:     uint64(y.NumBytesRead.Value()),
-				BytesIngested: uint64(y.NumBytesWritten.Value()),
+				BytesRead:     uint64(expvar.Get("badger_v3_read_bytes").(*expvar.Int).Value()),
+				BytesIngested: uint64(expvar.Get("badger_v3_written_bytes").(*expvar.Int).Value()),
 			},
 		},
 		MemTable: struct {
@@ -113,12 +112,11 @@ func (b badgerDB) Flush() error {
 }
 
 type badgerIterator struct {
-	txn     *badger.Txn
-	iter    *badger.Iterator
-	revIter *badger.Iterator
-	buf     []byte
-	lower   []byte
-	upper   []byte
+	txn   *badger.Txn
+	iter  *badger.Iterator
+	buf   []byte
+	lower []byte
+	upper []byte
 }
 
 func (i *badgerIterator) SeekGE(key []byte) bool {
@@ -134,14 +132,8 @@ func (i *badgerIterator) SeekGE(key []byte) bool {
 
 func (i *badgerIterator) SeekLT(key []byte) bool {
 	panic("not implemented")
-	return true
 	/*
 		# venkat TODO: check if this is the right way to do
-		i.revIter.Seek(key)
-		if !i.revIter.Valid() {
-			return false
-		}
-
 		if i.lower != nil && bytes.Compare(i.Key(), i.lower) <= 0 {
 			return false
 		}
@@ -150,29 +142,16 @@ func (i *badgerIterator) SeekLT(key []byte) bool {
 }
 
 func (i *badgerIterator) Valid() bool {
-	return i.iter.Valid() || i.revIter.Valid()
+	return i.iter.Valid()
 }
 
 func (i *badgerIterator) Key() []byte {
-	if i.revIter.Valid() {
-		return i.revIter.Item().Key()
-	}
-
 	return i.iter.Item().Key()
-
 }
 
 func (i *badgerIterator) Value() []byte {
 	var err error
-	if i.revIter.Valid() {
-		i.buf, err = i.revIter.Item().ValueCopy(i.buf[:0])
-		if err != nil {
-			log.Fatal(err)
-		}
-		return i.buf
-	}
-
-	i.buf, err = i.iter.Item().ValueCopy(i.buf[:0])
+	i.buf, err = i.iter.Item().ValueCopy(i.buf[:cap(i.buf)])
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -204,7 +183,6 @@ func (i *badgerIterator) Prev() bool {
 
 func (i *badgerIterator) Close() error {
 	i.iter.Close()
-	i.revIter.Close()
 	i.txn.Discard()
 	return nil
 }
