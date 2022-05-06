@@ -2,9 +2,6 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
-//go:build badger
-// +build badger
-
 package main
 
 import (
@@ -12,7 +9,10 @@ import (
 	"log"
 
 	"github.com/cockroachdb/pebble"
+	"github.com/cockroachdb/pebble/internal/cache"
+	"github.com/cockroachdb/pebble/sstable"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2/y"
 )
 
 // Adapters for Badger.
@@ -55,7 +55,57 @@ func (b badgerDB) Scan(iter iterator, key []byte, count int64, reverse bool) err
 }
 
 func (b badgerDB) Metrics() *pebble.Metrics {
-	return &pebble.Metrics{}
+	return &pebble.Metrics{
+		BlockCache: cache.Metrics{},
+		Compact: struct {
+			Count            int64
+			DefaultCount     int64
+			DeleteOnlyCount  int64
+			ElisionOnlyCount int64
+			MoveCount        int64
+			ReadCount        int64
+			RewriteCount     int64
+			EstimatedDebt    uint64
+			InProgressBytes  int64
+			NumInProgress    int64
+			MarkedFiles      int
+		},
+		Flush:  struct{ Count int64 }{},
+		Filter: sstable.FilterMetrics{},
+		Levels: [7]pebble.LevelMetrics{
+			pebble.LevelMetrics{
+				BytesRead:     uint64(y.NumBytesRead.Value()),
+				BytesIngested: uint64(y.NumBytesWritten.Value()),
+			},
+		},
+		MemTable: struct {
+			Size        uint64
+			Count       int64
+			ZombieSize  uint64
+			ZombieCount int64
+		}{},
+		Snapshots: struct {
+			Count          int
+			EarliestSeqNum uint64
+		}{},
+		Table: struct {
+			ObsoleteSize  uint64
+			ObsoleteCount int64
+			ZombieSize    uint64
+			ZombieCount   int64
+		}{},
+		TableCache: cache.Metrics{},
+		TableIters: 0,
+		WAL: struct {
+			Files                int64
+			ObsoleteFiles        int64
+			ObsoletePhysicalSize uint64
+			Size                 uint64
+			PhysicalSize         uint64
+			BytesIn              uint64
+			BytesWritten         uint64
+		}{},
+	}
 }
 
 func (b badgerDB) Flush() error {
@@ -83,6 +133,7 @@ func (i *badgerIterator) SeekGE(key []byte) bool {
 }
 
 func (i *badgerIterator) SeekLT(key []byte) bool {
+	panic("not implemented")
 	return true
 	/*
 		# venkat TODO: check if this is the right way to do
