@@ -31,6 +31,10 @@ func newBadgerDB(dir string) DB {
 	return &badgerDB{db}
 }
 
+func (b badgerDB) Name() string {
+	return "badger"
+}
+
 func (b badgerDB) NewIter(opts *pebble.IterOptions) iterator {
 	txn := b.db.NewTransaction(false)
 	iopts := badger.DefaultIteratorOptions

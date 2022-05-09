@@ -575,7 +575,8 @@ func (y *ycsb) done(elapsed time.Duration) {
 		readAmpCount = 1
 	}
 
-	fmt.Printf("Benchmarkycsb/%s/values=%s %d  %0.1f ops/sec  %d read  %d write  %.2f r-amp  %0.2f w-amp\n\n",
+	fmt.Printf("Engine:%s Benchmarkycsb/%s/values=%s %d  %0.1f ops/sec  %d read  %d write  %.2f r-amp  %0.2f w-amp\n\n",
+		y.db.Name(),
 		ycsbConfig.workload, ycsbConfig.values,
 		resultHist.TotalCount(),
 		float64(resultHist.TotalCount())/elapsed.Seconds(),
