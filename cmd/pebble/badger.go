@@ -24,6 +24,9 @@ type badgerDB struct {
 }
 
 func newBadgerDB(dir string) DB {
+	// venkat TODO:
+	// Badger iterator has a prefix setting for opts. That would selectively choose only the tables
+	// which are relevant before doing a seek. So, seek would be faster.
 	db, err := badger.Open(badger.DefaultOptions(dir))
 	if err != nil {
 		log.Fatal(err)
@@ -135,7 +138,7 @@ func (i *badgerIterator) SeekGE(key []byte) bool {
 }
 
 func (i *badgerIterator) SeekLT(key []byte) bool {
-	panic("not implemented")
+	panic("not implemented, not used ")
 	/*
 		# venkat TODO: check if this is the right way to do
 		if i.lower != nil && bytes.Compare(i.Key(), i.lower) <= 0 {
