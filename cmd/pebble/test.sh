@@ -1,4 +1,6 @@
 echo "Running badger"
+go build -o testbench -tags badger
+
 rm -rf ./dbfiles && mkdir ./dbfiles
 ./testbench  bench  ycsb ./dbfiles/ --engine badger --workload A
 
