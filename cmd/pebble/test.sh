@@ -1,41 +1,42 @@
 echo "Running badger"
+rm testbench
 go build -o testbench -tags badger
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine badger --workload A
+flags=" --duration=60s --initial-keys=10000000"
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine badger --workload B
+# echo "Workload A"
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine badger --workload A $flags
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine badger --workload C
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine pebble --workload A $flags
 
+# echo "Workload B"
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine badger --workload B $flags
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine badger --workload D
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine pebble --workload B $flags
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine badger --workload E
+echo "Workload C"
+rm -rf ./testfiles && mkdir ./testfiles || exit
+./testbench  bench  ycsb ./testfiles/ --engine badger --workload C $flags
 
-echo "Running pebble"
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine pebble --workload A
+rm -rf ./testfiles && mkdir ./testfiles || exit
+./testbench  bench  ycsb ./testfiles/ --engine pebble --workload C $flags
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine pebble --workload B
+# echo "Workload D"
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine badger --workload D --duration=120s
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine pebble --workload C
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine pebble --workload D --duration=120s
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine pebble --workload D
+# echo "Workload E"
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine badger --workload E --duration=120s
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-./testbench  bench  ycsb ./dbfiles/ --engine pebble --workload E
+# rm -rf ./testfiles && mkdir ./testfiles || exit
+# ./testbench  bench  ycsb ./testfiles/ --engine pebble --workload E --duration=120s
 
-rm -rf ./dbfiles && mkdir ./dbfiles
-
-
-
-
-
+# rm -rf ./testfiles

@@ -2,9 +2,6 @@
 // of this source code is governed by a BSD-style license that can be found in
 // the LICENSE file.
 
-//go:build badger
-// +build badger
-
 package main
 
 import (
@@ -16,6 +13,7 @@ import (
 	"github.com/cockroachdb/pebble/internal/cache"
 	"github.com/cockroachdb/pebble/sstable"
 	"github.com/outcaste-io/badger/v3"
+	"github.com/outcaste-io/badger/v3/options"
 )
 
 // Adapters for Badger.
@@ -27,7 +25,17 @@ func newBadgerDB(dir string) DB {
 	// venkat TODO:
 	// Badger iterator has a prefix setting for opts. That would selectively choose only the tables
 	// which are relevant before doing a seek. So, seek would be faster.
-	db, err := badger.Open(badger.DefaultOptions(dir))
+	//
+	// For now, just set cacheSize to Block cache. We can later determine if we
+	// want to do a 80-20 split between BlockCacheSize and IndexCacheSize.
+	opts := badger.DefaultOptions(dir).WithSyncWrites(false).WithBlockCacheSize(cacheSize)
+
+	// The following isn't on by default in Badger. But, to keep it compatible
+	// with what Pebble is doing internally, I added this here. We could also
+	// optionally turn off Pebble's block checking to improve it's performance.
+	opts = opts.WithChecksumVerificationMode(options.OnBlockRead)
+
+	db, err := badger.Open(opts)
 	if err != nil {
 		log.Fatal(err)
 	}

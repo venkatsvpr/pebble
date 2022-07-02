@@ -278,10 +278,11 @@ func newYcsb(
 		valueDist: valueDist,
 		opsMap:    make(map[string]int),
 	}
-	y.writeOpts = pebble.Sync
-	if disableWAL {
-		y.writeOpts = pebble.NoSync
-	}
+	// NOTE: Ensure it's always nosync.
+	y.writeOpts = pebble.NoSync
+	// if disableWAL {
+	// 	y.writeOpts = pebble.NoSync
+	// }
 
 	ops := map[string]int{
 		"insert": ycsbInsert,

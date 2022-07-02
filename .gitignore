@@ -2,3 +2,4 @@
 cpu.*.prof
 heap.prof
 mutex.prof
+/vendor
