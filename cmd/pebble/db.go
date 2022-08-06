@@ -20,6 +20,7 @@ type DB interface {
 	Scan(iter iterator, key []byte, count int64, reverse bool) error
 	Metrics() *pebble.Metrics
 	Flush() error
+	Name() string
 }
 
 type iterator interface {
@@ -103,6 +104,10 @@ func newPebbleDB(dir string) DB {
 		d:       p,
 		ballast: make([]byte, 1<<30),
 	}
+}
+
+func (p pebbleDB) Name() string {
+	return "pebble"
 }
 
 func (p pebbleDB) Flush() error {

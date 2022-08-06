@@ -313,7 +313,14 @@ func runTest(dir string, t test) {
 
 	fmt.Printf("dir %s\nconcurrency %d\n", dir, concurrency)
 
-	db := newPebbleDB(dir)
+	var db DB
+	switch engineType {
+	case "badger":
+		db = newBadgerDB(dir)
+	case "pebble":
+		db = newPebbleDB(dir)
+	}
+
 	var wg sync.WaitGroup
 	t.init(db, &wg)
 

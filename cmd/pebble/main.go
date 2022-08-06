@@ -19,6 +19,7 @@ var (
 	concurrency     int
 	disableWAL      bool
 	duration        time.Duration
+	engineType      string
 	maxOpsPerSec    = newRateFlag("")
 	verbose         bool
 	waitCompactions bool
@@ -74,6 +75,8 @@ func main() {
 			&concurrency, "concurrency", "c", 1, "number of concurrent workers")
 		cmd.Flags().BoolVar(
 			&disableWAL, "disable-wal", false, "disable the WAL (voiding persistence guarantees)")
+		cmd.Flags().StringVarP(
+			&engineType, "engine", "e", "pebble", "engine type (pebble, badger)")
 		cmd.Flags().VarP(
 			maxOpsPerSec, "rate", "m", "max ops per second [{zipf,uniform}:]min[-max][/period (sec)]")
 		cmd.Flags().BoolVar(
